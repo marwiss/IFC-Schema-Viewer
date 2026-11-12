@@ -1,0 +1,39 @@
+{
+  "header": { "id": "mini", "ifcxVersion": "ifcx_alpha", "dataVersion": "1.0.0", "author": "tests", "timestamp": "2026-11-12" },
+  "imports": [{ "uri": "https://ifcx.dev/@standards.buildingsmart.org/ifc/core/ifc@v5a.ifcx" }, { "no": "uri" }],
+  "schemas": {
+    "bsi::ifc::class": {
+      "value": { "dataType": "Object", "objectRestrictions": { "values": { "code": { "dataType": "String" }, "uri": { "dataType": "String" } } } }
+    },
+    "bsi::ifc::prop::Name": { "value": { "dataType": "String" } },
+    "bsi::ifc::prop::Height": { "value": { "dataType": "Real", "quantityKind": "Length" } },
+    "bsi::ifc::wall": {
+      "value": {
+        "dataType": "Object",
+        "objectRestrictions": {
+          "values": {
+            "Height": { "dataType": "Real" },
+            "PredefinedType": { "dataType": "Enum", "enumRestrictions": { "options": ["MOVABLE", "SOLIDWALL"] } },
+            "Extra": { "dataType": "Array", "arrayRestrictions": { "value": { "dataType": "Integer" } }, "optional": true }
+          }
+        }
+      }
+    },
+    "customdata": { "value": { "dataType": "String" } },
+    "broken": { "nope": true }
+  },
+  "data": [
+    {
+      "path": "w1",
+      "attributes": {
+        "bsi::ifc::class": { "code": "IfcWall", "uri": "https://identifier.buildingsmart.org/uri/buildingsmart/ifc/4.3/class/IfcWall" },
+        "bsi::ifc::prop::Height": 3.0,
+        "customdata": "x"
+      }
+    },
+    { "path": "w1", "attributes": { "customdata": null } },
+    { "path": "w2", "attributes": { "bsi::ifc::class": { "code": "IfcWall", "uri": "https://identifier.buildingsmart.org/uri/buildingsmart/ifc/4.3/class/IfcWall" } } },
+    { "path": "s1", "children": { "Wall": "w1" } },
+    { "nopath": true }
+  ]
+}

@@ -284,12 +284,24 @@ export function structureGraph(model, structure) {
     }
   }
 
-  // A SELECT shown is joined to those of its members that are shown.
+  // A SELECT shown is joined to its members that are shown, or else to the shown entities nearest below a member.
   for (const id of [...el.nodes.keys()]) {
     if (model.type(id)?.kind !== "select") continue;
-    for (const item of selectMembers(id).filter(isShown)) {
-      const target = model.canonical(item);
-      el.edge(`sel:${id}>${target}`, id, target, { kind: "select" });
+    const members = selectMembers(id);
+    const upper = new Set(members.map((m) => m.toUpperCase()));
+    for (const node of el.nodes.values()) {
+      const n = node.data.id;
+      if (!model.entity(n)) continue;
+      if (upper.has(n.toUpperCase())) {
+        el.edge(`sel:${id}>${n}`, id, n, { kind: "select" });
+        continue;
+      }
+      const chain = model.ancestors(n);
+      const at = chain.findIndex((a) => upper.has(a.toUpperCase()));
+      // Only when no shown entity stands between this one and the member, so that each branch is joined once.
+      if (at >= 0 && !chain.slice(0, at + 1).some(isShown)) {
+        el.edge(`sel:${id}>${n}`, id, n, { kind: "select", label: `via ${chain[at]}` });
+      }
     }
   }
 

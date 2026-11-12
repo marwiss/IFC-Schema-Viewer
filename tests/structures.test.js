@@ -29,6 +29,7 @@ ENTITY IfcSpatialStructureElement SUBTYPE OF (IfcObjectDefinition); END_ENTITY;
 ENTITY IfcBuilding SUBTYPE OF (IfcSpatialStructureElement); END_ENTITY;
 ENTITY IfcPlacementA; END_ENTITY;
 ENTITY IfcPlacementB; END_ENTITY;
+ENTITY IfcPlacementC SUBTYPE OF (IfcPlacementA); END_ENTITY;
 END_SCHEMA;`;
 
 const model = buildModel(SCHEMA);
@@ -65,6 +66,16 @@ test("a SELECT shown is joined to its shown members, and a subtype line says whi
   assert.deepEqual(edges(g.elements), [
     "select:IfcPlacementSelect>IfcPlacementB",
     "subtype:IfcRoot>IfcBuilding[via IfcSpatialStructureElement, IfcObjectDefinition]",
+  ]);
+});
+
+test("a SELECT reaches a shown subtype of a member when nothing shown stands between them", () => {
+  assert.deepEqual(edges(structureGraph(model, { names: ["IfcPlacementSelect", "IfcPlacementC"] }).elements), [
+    "select:IfcPlacementSelect>IfcPlacementC[via IfcPlacementA]",
+  ]);
+  assert.deepEqual(edges(structureGraph(model, { names: ["IfcPlacementSelect", "IfcPlacementA", "IfcPlacementC"] }).elements), [
+    "select:IfcPlacementSelect>IfcPlacementA",
+    "subtype:IfcPlacementA>IfcPlacementC",
   ]);
 });
 

@@ -1,0 +1,6 @@
+/* This file was generated with the assistance of an AI coding tool. */
+/* SPDX-License-Identifier: AGPL-3.0-or-later */
+/* The rule Cytoscape would otherwise add as an inline <style>, which the page's CSP does not allow. */
+.__________cytoscape_container {
+  position: relative;
+}

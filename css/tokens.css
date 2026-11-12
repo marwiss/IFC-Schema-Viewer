@@ -1,0 +1,198 @@
+/*
+ * Copied unchanged from Dataspatium, src/ui/design/tokens.css at 36a0855 (2026-11-10), below this header.
+ * The copyright holder licenses this copy under the licence of this repository.
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+/*
+ * Dataspatium design tokens: the single source of truth for colour, type, spacing and shape.
+ * Components and views only ever reference these variables. See the style guide: components never hard-code colours, sizes or type.
+ */
+:root {
+  color-scheme: light;
+
+  /* Typography */
+  --dm-font-sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --dm-font-mono: ui-monospace, "Cascadia Mono", Consolas, "Liberation Mono", monospace;
+  --dm-text-xs: 0.75rem;
+  --dm-text-sm: 0.8125rem;
+  --dm-text-md: 0.9375rem;
+  --dm-text-lg: 1.0625rem;
+  --dm-text-xl: 1.25rem;
+  --dm-text-2xl: 1.5rem;
+  --dm-leading: 1.45;
+  --dm-weight-regular: 400;
+  --dm-weight-medium: 500;
+  --dm-weight-semibold: 600;
+
+  /* Spacing, 4 px scale */
+  --dm-s-1: 4px;
+  --dm-s-2: 8px;
+  --dm-s-3: 12px;
+  --dm-s-4: 16px;
+  --dm-s-5: 20px;
+  --dm-s-6: 24px;
+  --dm-s-8: 32px;
+  --dm-s-10: 40px;
+  --dm-s-12: 48px;
+
+  /* Shape and elevation */
+  --dm-radius-sm: 6px;
+  --dm-radius-md: 10px;
+  --dm-shadow: 0 1px 2px rgb(16 24 40 / 0.06), 0 1px 3px rgb(16 24 40 / 0.1);
+  --dm-shadow-lg: 0 12px 32px rgb(16 24 40 / 0.18);
+  --dm-backdrop: rgb(16 24 40 / 0.35);
+  --dm-transition: 120ms ease;
+
+  /* Neutral scale */
+  --dm-n-0: #ffffff;
+  /* QR codes stay white on every theme, so that cameras read them. */
+  --dm-qr-bg: #ffffff;
+  --dm-n-50: #f7f8fa;
+  --dm-n-100: #eef0f3;
+  --dm-n-200: #e1e4e9;
+  --dm-n-300: #cbd0d8;
+  --dm-n-350: #808894;
+  --dm-n-400: #656e7b;
+  --dm-n-500: #545c69;
+  --dm-n-600: #4b5563;
+  --dm-n-700: #343c48;
+  --dm-n-800: #1f252e;
+  --dm-n-900: #12161c;
+
+  /* Semantic surfaces and text */
+  --dm-bg: var(--dm-n-50);
+  --dm-surface: var(--dm-n-0);
+  --dm-surface-2: var(--dm-n-100);
+  --dm-surface-hover: var(--dm-n-100);
+  --dm-border: var(--dm-n-200);
+  --dm-border-strong: var(--dm-n-300);
+  /* Borders of form fields and switches: at least 3:1 against every surface (WCAG 1.4.11). */
+  --dm-border-input: var(--dm-n-350);
+  /* Text tokens reach at least 4.5:1 on bg, surface and surface-2 (WCAG 1.4.3); checked by tests/a11y.test.js. */
+  --dm-text: var(--dm-n-800);
+  --dm-text-muted: var(--dm-n-500);
+  --dm-text-faint: var(--dm-n-400);
+  --dm-selection: #dbe7f6;
+
+  /* Accent (one hue for the whole app) */
+  --dm-accent: #2b6cb0;
+  --dm-accent-hover: #245c96;
+  --dm-accent-soft: #e6effa;
+  --dm-on-accent: #ffffff;
+  --dm-focus: #7fb0ea;
+
+  /* Status */
+  --dm-ok: #16703f;
+  --dm-ok-soft: #e4f4ea;
+  --dm-warn: #8f5a0b;
+  --dm-warn-soft: #fbf1dd;
+  --dm-error: #c0392b;
+  --dm-error-soft: #fbe6e3;
+  --dm-info: var(--dm-accent);
+  --dm-info-soft: var(--dm-accent-soft);
+
+  /* Data palette: Okabe-Ito, colour-blind safe; shared with ggplot2, Vega and D3 */
+  --dm-cat-1: #0072b2;
+  --dm-cat-2: #e69f00;
+  --dm-cat-3: #009e73;
+  --dm-cat-4: #d55e00;
+  --dm-cat-5: #56b4e9;
+  --dm-cat-6: #cc79a7;
+  --dm-cat-7: #f0e442;
+  --dm-cat-8: #7f7f7f;
+  --dm-seq-start: #dbe9f6;
+  --dm-seq-end: #08306b;
+  --dm-div-neg: #b2182b;
+  --dm-div-mid: #f7f7f7;
+  --dm-div-pos: #2166ac;
+  --dm-grid: var(--dm-n-200);
+
+  /* Layout */
+  --dm-topbar-h: 48px;
+  --dm-panel-w: 280px;
+  --dm-inspector-w: 320px;
+  --dm-drawer-h: 220px;
+  --dm-drawer-min-h: 96px;
+  --dm-drawer-max-h: 560px;
+  --dm-floating-w: 400px;
+  --dm-statusbar-h: 28px;
+  --dm-sheet-w: 360px;
+  --dm-panel-min-w: 200px;
+  --dm-panel-max-w: 560px;
+  --dm-z-sheet: 40;
+  --dm-floating-max-h: 640px;
+  --dm-z-drawer: 10;
+  --dm-z-floating: 50;
+  --dm-z-dialog: 100;
+  --dm-z-toast: 200;
+}
+
+/* Dark theme: explicit choice ... */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --dm-bg: #12161c;
+  --dm-surface: #1a2029;
+  --dm-surface-2: #222a35;
+  --dm-surface-hover: #262f3b;
+  --dm-border: #2e3745;
+  --dm-border-strong: #3b4657;
+  --dm-border-input: #6b7583;
+  --dm-text: #e6e9ee;
+  --dm-text-muted: #a9b1bd;
+  --dm-text-faint: #8c95a2;
+  --dm-selection: #1f3550;
+  --dm-accent: #63a4ff;
+  --dm-accent-hover: #7fb5ff;
+  --dm-accent-soft: #1b2a40;
+  --dm-on-accent: #0b1b33;
+  --dm-focus: #4d8ee6;
+  --dm-ok: #4cc38a;
+  --dm-ok-soft: #15301f;
+  --dm-warn: #e0a94c;
+  --dm-warn-soft: #3a2c12;
+  --dm-error: #ff7b6b;
+  --dm-error-soft: #3b1c18;
+  --dm-seq-start: #1b2a40;
+  --dm-seq-end: #9ecae1;
+  --dm-div-mid: #222a35;
+  --dm-grid: #2e3745;
+  --dm-shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 1px 3px rgb(0 0 0 / 0.5);
+  --dm-shadow-lg: 0 12px 32px rgb(0 0 0 / 0.6);
+  --dm-backdrop: rgb(0 0 0 / 0.6);
+}
+
+/* ... or following the system when no explicit choice has been made. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --dm-bg: #12161c;
+    --dm-surface: #1a2029;
+    --dm-surface-2: #222a35;
+    --dm-surface-hover: #262f3b;
+    --dm-border: #2e3745;
+    --dm-border-strong: #3b4657;
+    --dm-border-input: #6b7583;
+    --dm-text: #e6e9ee;
+    --dm-text-muted: #a9b1bd;
+    --dm-text-faint: #8c95a2;
+    --dm-selection: #1f3550;
+    --dm-accent: #63a4ff;
+    --dm-accent-hover: #7fb5ff;
+    --dm-accent-soft: #1b2a40;
+    --dm-on-accent: #0b1b33;
+    --dm-focus: #4d8ee6;
+    --dm-ok: #4cc38a;
+    --dm-ok-soft: #15301f;
+    --dm-warn: #e0a94c;
+    --dm-warn-soft: #3a2c12;
+    --dm-error: #ff7b6b;
+    --dm-error-soft: #3b1c18;
+    --dm-seq-start: #1b2a40;
+    --dm-seq-end: #9ecae1;
+    --dm-div-mid: #222a35;
+    --dm-grid: #2e3745;
+    --dm-shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 1px 3px rgb(0 0 0 / 0.5);
+    --dm-shadow-lg: 0 12px 32px rgb(0 0 0 / 0.6);
+    --dm-backdrop: rgb(0 0 0 / 0.6);
+  }
+}

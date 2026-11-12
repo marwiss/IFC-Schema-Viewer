@@ -1,0 +1,102 @@
+<!doctype html>
+<!-- This file was generated with the assistance of an AI coding tool. -->
+<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; connect-src 'self' https://raw.githubusercontent.com https://ifcx.dev; base-uri 'none'; form-action 'none'">
+    <meta name="referrer" content="no-referrer">
+    <meta name="description" content="IFC schemas as a navigable graph in the browser: EXPRESS (IFC2X3, IFC4, IFC4X3) and IFC5 (IFCX).">
+    <title>IFC Schema Viewer</title>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="css/tokens.css">
+    <link rel="stylesheet" href="css/app.css">
+    <!-- Cytoscape adds a style element unless an element with this id exists; css/cytoscape.css has its rule. -->
+    <link rel="stylesheet" id="__________cytoscape_stylesheet" href="css/cytoscape.css">
+    <script src="vendor/cytoscape/cytoscape.min.js" defer></script>
+    <script src="vendor/layout-base/layout-base.js" defer></script>
+    <script src="vendor/cose-base/cose-base.js" defer></script>
+    <script src="vendor/cytoscape-fcose/cytoscape-fcose.js" defer></script>
+    <script src="vendor/elkjs/elk.bundled.js" defer></script>
+    <script src="vendor/cytoscape-elk/cytoscape-elk.js" defer></script>
+    <script type="module" src="src/main.js"></script>
+  </head>
+  <body class="start">
+    <header class="topbar">
+      <h1>IFC Schema Viewer</h1>
+      <nav id="schemas" class="segments" aria-label="Schemas"></nav>
+      <label class="button" for="file">Open .exp or .ifcx…</label>
+      <input id="file" type="file" accept=".exp,.ifcx,.json" multiple class="visually-hidden">
+      <button id="theme" type="button" class="button">Theme: system</button>
+    </header>
+
+    <aside class="sidebar" aria-label="Names in the schema">
+      <input id="search" type="search" placeholder="Search names…" aria-label="Search names" autocomplete="off" spellcheck="false">
+      <div id="list"></div>
+    </aside>
+
+    <main class="stage">
+      <div class="toolbar" role="toolbar" aria-label="Graph">
+        <div class="segments" aria-label="View">
+          <button type="button" class="seg" data-view="near" title="The selected name and its relations (fCoSE)">Neighbourhood</button>
+          <button type="button" class="seg" data-view="tree" title="Supertypes up to the root and every subtype below (ELK)">Inheritance</button>
+          <button type="button" class="seg" data-view="all" title="Every entity of the schema (ELK)">Whole tree</button>
+          <button type="button" class="seg" data-view="compare" title="The entity beside the IFC5 components with the same names">IFC5 comparison</button>
+        </div>
+        <label class="inline">Depth
+          <select id="depth"><option value="1">1</option><option value="2">2</option></select>
+        </label>
+        <details class="menu">
+          <summary class="button">Relations</summary>
+          <div id="relations" class="menu-body"></div>
+        </details>
+        <button id="path" type="button" class="button" title="Mark the supertypes up to the root">Path to root</button>
+        <button id="clear" type="button" class="button">Clear marks</button>
+        <button id="fit" type="button" class="button">Fit</button>
+        <button id="png" type="button" class="button">PNG</button>
+        <details class="menu">
+          <summary class="button">Legend</summary>
+          <div class="menu-body legend">
+            <p><span class="sw entity"></span> Entity; (ABS) marks an abstract supertype</p>
+            <p><span class="sw defined"></span> Defined type</p>
+            <p><span class="sw select"></span> SELECT type</p>
+            <p><span class="sw enum"></span> ENUMERATION type</p>
+            <p><span class="sw simple"></span> Simple type (REAL, STRING …)</p>
+            <p><span class="sw component"></span> IFC5 component; boxes are namespaces</p>
+            <p><span class="ln subtype"></span> SUBTYPE OF (thick; "1" for ONEOF)</p>
+            <p><span class="ln attribute"></span> Attribute (dashed when OPTIONAL; * redeclared)</p>
+            <p><span class="ln derive"></span> (DER) derived · <span class="ln inverse"></span> (INV) inverse</p>
+            <p><span class="ln select"></span> SELECT member · <span class="ln ifc5"></span> same name in IFC5</p>
+          </div>
+        </details>
+      </div>
+
+      <section class="intro" aria-label="Start">
+        <h2>IFC schemas as a graph</h2>
+        <p>Pick a schema. The EXPRESS schemas are parsed here in the browser from the .exp files; the IFC5 schemas are read
+          as IFCX (JSON) from ifcx.dev. Every file is fetched from a pinned address and checked against its SHA-256.</p>
+        <p class="starts">
+          <button type="button" class="primary" data-start="IFC2X3">IFC2X3 TC1</button>
+          <button type="button" class="primary" data-start="IFC4">IFC4 ADD2 TC1</button>
+          <button type="button" class="primary" data-start="IFC4X3">IFC4X3 ADD2</button>
+          <button type="button" class="primary" data-start="IFC5">IFC5 (IFCX v5a)</button>
+        </p>
+        <p>Click a node for its details, double-click it to bring in its neighbours, and Ctrl+click it to open its page
+          in the standard. An IFC4 entity can be compared with IFC5 through the code of <code>bsi::ifc::class</code>.</p>
+      </section>
+      <div id="graph" class="graph" role="img" aria-label="Graph"></div>
+      <p id="boot" class="boot">Loading… If this stays, the page must be served over http (for instance
+        <code>python -m http.server</code>); it does not run from a file.</p>
+      <noscript><p class="boot">This page needs JavaScript to read the schemas and draw the graph.</p></noscript>
+    </main>
+
+    <aside id="panel" class="panel" aria-label="Details" aria-live="polite"></aside>
+
+    <footer class="statusbar">
+      <span id="status" class="status" role="status"></span>
+      <span id="source" class="source-note"></span>
+      <a href="https://github.com/marwiss/IFC-Schema-Viewer" target="_blank" rel="noopener noreferrer">Source code (AGPL-3.0-or-later)</a>
+    </footer>
+  </body>
+</html>

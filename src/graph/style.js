@@ -110,7 +110,8 @@ export function graphStyle(t) {
     { selector: 'edge[kind = "reverse"]', style: { "line-color": t["text-faint"], "target-arrow-color": t["text-faint"] } },
     { selector: 'edge[kind = "member"]', style: { "line-color": t["cat-4"], "target-arrow-color": t["cat-4"] } },
     { selector: 'edge[kind = "ifc5"]', style: { "line-style": "dashed", "line-color": t["cat-4"], "target-arrow-color": t["cat-4"], "target-arrow-shape": "vee" } },
-    { selector: "edge.tree", style: { "curve-style": "taxi", "taxi-direction": "rightward", "taxi-turn": 24 } },
+    { selector: "edge.tree", style: { "curve-style": "taxi", "taxi-direction": "rightward", "taxi-turn": 16 } },
+    { selector: "edge.down", style: { "taxi-direction": "downward" } },
     { selector: "edge:selected", style: { width: 2.5, "line-color": t.accent, "target-arrow-color": t.accent } },
   ];
 }

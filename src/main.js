@@ -203,6 +203,17 @@ function ensureGraph() {
   return graph;
 }
 
+/** The most entities on one level of the subtree below `name` (the supertypes above it are one per level). */
+function widestLevel(model, name) {
+  let level = [name];
+  let widest = 1;
+  while (level.length) {
+    level = level.flatMap((n) => model.entity(n)?.subtypes ?? []);
+    widest = Math.max(widest, level.length);
+  }
+  return widest;
+}
+
 async function drawGraph(model, focus, token) {
   const g = ensureGraph();
   $("graph").setAttribute("aria-label", `Graph of ${focus ?? model.label}`);
@@ -218,8 +229,9 @@ async function drawGraph(model, focus, token) {
       classes = "tree";
     } else if (state.view === "tree" && isEntity) {
       elements = inheritanceTree(model, name);
-      layout = treeLayout();
-      classes = "tree";
+      const down = widestLevel(model, name) * 150 <= g.cy.width();
+      layout = treeLayout(down ? "DOWN" : "RIGHT");
+      classes = down ? "tree down" : "tree";
     } else if (state.view === "compare" && isEntity) {
       status("Loading IFC5 for the comparison…");
       const { comparison, ifc5 } = await app.compare(name);
@@ -232,7 +244,8 @@ async function drawGraph(model, focus, token) {
     }
     await g.show(elements, layout, classes);
     // A large tree fits the view at a zoom where labels cannot be read; then go to the focus instead.
-    if (token === renderToken) g.focus(model.canonical(name), classes === "tree" && g.cy.zoom() < 0.6);
+    const large = elements.length > 120 && g.cy.zoom() < 0.6;
+    if (token === renderToken) g.focus(model.canonical(name), classes.startsWith("tree") && large);
   } else {
     const component = focus && model.component(focus);
     elements = component && state.view !== "all" ? ifcxComponent(model, focus) : ifcxOverview(model);

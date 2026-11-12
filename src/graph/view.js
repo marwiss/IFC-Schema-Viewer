@@ -20,8 +20,8 @@ function register() {
   registered = true;
 }
 
-/** ELK's layered (Sugiyama) layout for trees, supertypes to the left. */
-export function treeLayout() {
+/** ELK's layered (Sugiyama) layout for trees, supertypes to the left (RIGHT) or at the top (DOWN). */
+export function treeLayout(direction = "RIGHT") {
   const algorithm = "layered";
   return {
     name: "elk",
@@ -31,9 +31,9 @@ export function treeLayout() {
     nodeDimensionsIncludeLabels: false,
     elk: {
       algorithm,
-      "elk.direction": "RIGHT",
+      "elk.direction": direction,
       "elk.spacing.nodeNode": 10,
-      "elk.layered.spacing.nodeNodeBetweenLayers": 48,
+      "elk.layered.spacing.nodeNodeBetweenLayers": 32,
       "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
     },
   };
@@ -142,7 +142,7 @@ export function createGraph(container, on) {
       if (n.empty()) return false;
       cy.elements().unselect();
       n.select();
-      if (center) cy.animate({ zoom: Math.max(cy.zoom(), 0.9), center: { eles: n }, duration: 250 });
+      if (center) cy.animate({ zoom: Math.max(cy.zoom(), 0.75), center: { eles: n }, duration: 250 });
       return true;
     },
 

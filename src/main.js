@@ -29,9 +29,11 @@ const state = { schemaId: null, focus: null, view: "near", depth: 1, relations: 
 const local = new Map(); // id → {label, model} for EXPRESS files the user opened
 const localIfcx = []; // IFCX files the user opened, composed after the pinned ones
 const models = new Map(); // id → Promise<model>
+const loadedPsets = new Map(); // model id → property set templates, once read
 let graph = null;
 let current = null; // the model on show
 let renderToken = 0;
+let drawDone = Promise.resolve(); // the graph being drawn for the current route
 
 // Loading
 
@@ -77,7 +79,7 @@ const app = {
     if (!models.has(cacheKey)) {
       const job = fetchPinned(source, LIMITS.jsonBytes).then((bytes) => readPsetTemplates(decode(bytes), model));
       models.set(cacheKey, job);
-      job.catch(() => models.delete(cacheKey));
+      job.then((psets) => loadedPsets.set(model.id, psets)).catch(() => models.delete(cacheKey));
     }
     return models.get(cacheKey).catch(() => null);
   },
@@ -347,11 +349,15 @@ async function render() {
   }
   if (token !== renderToken) return;
   current = model;
-  // The property set templates are needed for a set, and for the neighbourhood's `pset` relation.
-  const wantSets = model.format === "express" && (state.focus?.startsWith("p:") || state.relations.has("pset"));
-  if (wantSets && state.focus?.startsWith("p:")) status(`Loading the property set templates of ${model.label}…`);
-  currentPsets = wantSets ? await app.psets(model) : null;
-  if (token !== renderToken) return;
+  // The property set templates: awaited for a set's own page, otherwise used when read and added when they come.
+  currentPsets = model.format === "express" ? loadedPsets.get(model.id) ?? null : null;
+  if (model.format === "express" && state.focus?.startsWith("p:") && !currentPsets) {
+    status(`Loading the property set templates of ${model.label}…`);
+    currentPsets = await app.psets(model);
+    if (token !== renderToken) return;
+  } else if (model.format === "express" && !currentPsets && state.relations.has("pset")) {
+    app.psets(model).then((psets) => lateSets(psets, model, token));
+  }
   if (model.format === "ifcx" && state.view !== "all") state.view = "near";
   let missing = null;
   const known =
@@ -370,12 +376,26 @@ async function render() {
   renderList();
   showPanel(model, state.focus);
   try {
-    await drawGraph(model, state.focus, token);
+    drawDone = drawGraph(model, state.focus, token);
+    await drawDone;
   } catch (error) {
     if (token === renderToken) status(`The graph could not be drawn: ${error.message}`, "error");
     return;
   }
   if (missing && token === renderToken) status(missing, "error");
+}
+
+/** Templates that came after the page was drawn: into the list, and the focus's own sets into its neighbourhood. */
+async function lateSets(psets, model, token) {
+  await drawDone.catch(() => {}); // never add to a graph that is still being laid out
+  if (!psets || token !== renderToken || current !== model) return;
+  currentPsets = psets;
+  renderList();
+  const focus = state.focus ?? (model.entity("IfcRoot") ? "IfcRoot" : null);
+  if (graph && state.view === "near" && focus && model.kindOf(focus) === "entity" && state.relations.has("pset")) {
+    const added = expansion(model, focus, new Set(["pset"]), psets);
+    if (added.length > 1) graph.add(added, { ...nearLayout(true), fit: true });
+  }
 }
 
 // Files the user opens

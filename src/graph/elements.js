@@ -63,7 +63,8 @@ function addExpress(el, model, name) {
 /** A node for a property or quantity set template: `p:<name>`. */
 function addSet(el, set) {
   const id = `p:${set.name}`;
-  el.node(id, { label: set.name, kind: /^Qto_/.test(set.name) ? "qto" : "pset", w: width(set.name) });
+  // A tag's point takes room from its label, so it gets more width.
+  el.node(id, { label: set.name, kind: /^Qto_/.test(set.name) ? "qto" : "pset", w: Math.round(width(set.name) * 1.2) });
   return id;
 }
 

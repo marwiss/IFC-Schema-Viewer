@@ -12,8 +12,9 @@ import { buildModel } from "./express/model.js";
 import { readIfcx, buildIfcxModel } from "./ifcx/schema.js";
 import { loadDocs, docEntry, safeUrl } from "./docs.js";
 import { compareEntity } from "./compare.js";
-import { RELATIONS, neighbourhood, expansion, inheritanceTree, ifcxOverview, ifcxComponent, comparisonGraph, structureGraph } from "./graph/elements.js";
+import { RELATIONS, neighbourhood, expansion, inheritanceTree, ifcxOverview, ifcxComponent, comparisonGraph, structureGraph, psetGraph } from "./graph/elements.js";
 import { structureById } from "./structures.js";
+import { readPsetTemplates } from "./psets.js";
 import { createGraph, treeLayout, nearLayout } from "./graph/view.js";
 import { el, replace } from "./ui/dom.js";
 import { renderExpressList, renderIfcxList } from "./ui/sidebar.js";
@@ -64,8 +65,21 @@ const app = {
   },
   async compare(name) {
     const express = current?.format === "express" ? current : await loadModel(CLASS_SCHEMA);
-    const [ifc5, classSchema] = await Promise.all([loadModel("IFC5"), loadModel(CLASS_SCHEMA)]);
-    return { comparison: compareEntity(name, express, ifc5, classSchema), ifc5 };
+    const [ifc5, classSchema, psets] = await Promise.all([loadModel("IFC5"), loadModel(CLASS_SCHEMA), app.psets(express)]);
+    return { comparison: compareEntity(name, express, ifc5, classSchema, psets), ifc5 };
+  },
+  /** The property and quantity set templates of an EXPRESS model's version, or null when it has none. */
+  psets(model) {
+    const id = schemaById(model.id) ? model.id : DOCS_BY_SCHEMA[model.schema];
+    const source = schemaById(id)?.docs?.psets;
+    if (!source) return Promise.resolve(null);
+    const cacheKey = `psets:${model.id}`;
+    if (!models.has(cacheKey)) {
+      const job = fetchPinned(source, LIMITS.jsonBytes).then((bytes) => readPsetTemplates(decode(bytes), model));
+      models.set(cacheKey, job);
+      job.catch(() => models.delete(cacheKey));
+    }
+    return models.get(cacheKey).catch(() => null);
   },
   /** The three pinned EXPRESS schemas, oldest first. */
   async versions() {
@@ -131,7 +145,7 @@ function renderList() {
   const node = $("list");
   if (!current) return replace(node);
   const go = (name) => app.navigate(name, current.format === "ifcx" ? "near" : state.view === "compare" ? "near" : state.view);
-  if (current.format === "express") renderExpressList(node, current, state.query, state.focus, go);
+  if (current.format === "express") renderExpressList(node, current, state.query, state.focus, go, currentPsets);
   else renderIfcxList(node, current, state.query, state.focus, go);
 }
 
@@ -140,10 +154,17 @@ function renderList() {
 /** The structure a focus `s:<id>` names, or null. */
 const structureOf = (focus) => (typeof focus === "string" && focus.startsWith("s:") ? structureById(focus.slice(2)) : null);
 
+/** The property set a focus `p:<name>` names in the loaded templates, or null. */
+const setOf = (focus) => (typeof focus === "string" && focus.startsWith("p:") && currentPsets ? currentPsets.set(focus.slice(2)) : null);
+
+let currentPsets = null; // the templates of the model on show, when loaded
+
 function showPanel(model, name) {
   const panel = $("panel");
   const structure = model.format === "express" ? structureOf(name) : null;
   if (structure) return panels.renderStructure(panel, model, structure, structureGraph(model, structure), app);
+  const set = model.format === "express" ? setOf(name) : null;
+  if (set) return panels.renderPset(panel, model, set, app);
   if (model.format === "express") {
     const kind = name ? model.kindOf(name) : null;
     if (kind === "entity") return panels.renderEntity(panel, model, name, app);
@@ -167,10 +188,14 @@ function nameOfNode(node) {
   if (id.startsWith("c:")) return id.slice(2);
   if (id.startsWith("ns:")) return id === "ns:(none)" ? "ns:" : id;
   if (id.startsWith("m:")) return id.slice(2, id.indexOf("/"));
+  if (id.startsWith("pp:")) return `p:${id.slice(3, id.indexOf("."))}`;
   return id;
 }
 
 async function docUrl(model, name) {
+  if (model.format === "express" && name.startsWith("p:")) {
+    return safeUrl(docEntry(await app.docs(model, "properties"), name.slice(2))?.spec_url);
+  }
   if (model.format === "express") {
     const kind = model.kindOf(name);
     const part = kind === "entity" ? "entities" : ["select", "enum", "defined"].includes(kind) ? "types" : null;
@@ -202,8 +227,10 @@ function ensureGraph() {
     expand(node) {
       if (!current) return;
       const name = nameOfNode(node);
-      if (current.format === "express" && (state.view === "near" || state.view === "compare")) {
-        graph.add(expansion(current, name, state.relations), nearLayout(true));
+      if (current.format === "express" && name.startsWith("p:")) {
+        app.navigate(name, "near");
+      } else if (current.format === "express" && (state.view === "near" || state.view === "compare")) {
+        graph.add(expansion(current, name, state.relations, currentPsets), nearLayout(true));
       } else if (current.format === "ifcx" && current.component(name)) {
         app.navigate(name, "near");
       } else if (current.format === "express") {
@@ -240,6 +267,14 @@ async function drawGraph(model, focus, token) {
     status(`${model.label}: ${structure.en}, ${elements.filter((e) => e.group === "nodes").length} nodes. Click a name for its details, double-click to expand.`);
     return;
   }
+  const set = model.format === "express" ? setOf(focus) : null;
+  if (set) {
+    elements = psetGraph(model, set);
+    await g.show(elements, nearLayout());
+    if (token !== renderToken) return;
+    status(`${model.label}: ${set.name}, ${set.properties.length} properties, applies to ${set.applicable.length}. Click for details, Ctrl+click to open the standard.`);
+    return;
+  }
   if (model.format === "express") {
     const name = focus && model.kindOf(focus) ? focus : model.entity("IfcRoot") ? "IfcRoot" : model.roots()[0];
     const isEntity = model.kindOf(name) === "entity";
@@ -259,7 +294,7 @@ async function drawGraph(model, focus, token) {
       elements = comparisonGraph(model, comparison, ifc5);
       layout = nearLayout();
     } else {
-      elements = neighbourhood(model, name, { depth: state.depth, relations: state.relations });
+      elements = neighbourhood(model, name, { depth: state.depth, relations: state.relations, psets: currentPsets });
       layout = nearLayout();
     }
     await g.show(elements, layout, classes);
@@ -312,18 +347,24 @@ async function render() {
   }
   if (token !== renderToken) return;
   current = model;
+  // The property set templates are needed for a set, and for the neighbourhood's `pset` relation.
+  const wantSets = model.format === "express" && (state.focus?.startsWith("p:") || state.relations.has("pset"));
+  if (wantSets && state.focus?.startsWith("p:")) status(`Loading the property set templates of ${model.label}…`);
+  currentPsets = wantSets ? await app.psets(model) : null;
+  if (token !== renderToken) return;
   if (model.format === "ifcx" && state.view !== "all") state.view = "near";
   let missing = null;
   const known =
     model.format === "express"
-      ? model.kindOf(state.focus ?? "") || structureOf(state.focus)
+      ? model.kindOf(state.focus ?? "") || structureOf(state.focus) || setOf(state.focus)
       : model.component(state.focus ?? "") || state.focus?.startsWith("ns:");
   if (state.focus && !known) {
     missing = `${state.focus} is not in ${model.label}.`;
     state.focus = null;
   }
-  if (state.focus && model.format === "express" && !structureOf(state.focus)) state.focus = model.canonical(state.focus);
-  if (structureOf(state.focus)) state.view = "near";
+  const special = structureOf(state.focus) || setOf(state.focus);
+  if (state.focus && model.format === "express" && !special) state.focus = model.canonical(state.focus);
+  if (special) state.view = "near";
   $("source").textContent = info ? info.notice : `${local.get(state.schemaId)?.label} (opened from your computer)`;
   viewButtons();
   renderList();

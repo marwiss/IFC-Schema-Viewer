@@ -30,6 +30,7 @@ export const SCHEMAS = [
       entities: { url: `${IOS}ifc2x3_entities.json`, sha256: "48d4fda95f576e9d45bb621906a024ecaa8fbf47a74fad6efa52a58bd1f6eb4e" },
       types: { url: `${IOS}ifc2x3_types.json`, sha256: "9a52b35a4e6c4def1ac010efa33d0ac8d2d59694bc91eaec6f8bdf524ac1c02c" },
       properties: { url: `${IOS}ifc2x3_properties.json`, sha256: "45ed1ea34898c999de8b80f622260152fd0c2c29a4d5b60d32ca5e9352a15b8f" },
+      psets: { url: `${IOS}Pset_IFC2X3.ifc`, sha256: "61a8732fbc35c5e911d7750e2be0e93ce7724e7eee751e9a6bfd71ebce7ef407" },
     },
   },
   {
@@ -48,6 +49,7 @@ export const SCHEMAS = [
       entities: { url: `${IOS}ifc4_entities.json`, sha256: "7b0010287ab1dc1bf4ebe297869fef49d92bf0ebef91509cd56f0935b1ea0ca9" },
       types: { url: `${IOS}ifc4_types.json`, sha256: "34c22bdffa0dccbf23ce01715bfab6473c762ee1fba5de2d6269b0b6b68befb7" },
       properties: { url: `${IOS}ifc4_properties.json`, sha256: "95896b227bc8430c027f9195299bd565381a8ae382dbefd8e8f762baf3bcfb1d" },
+      psets: { url: `${IOS}Pset_IFC4_ADD2.ifc`, sha256: "5224cb82bea85ad4168e4a972fe410d1e4a727b55ae2127afbf2f623c4372bb1" },
     },
   },
   {
@@ -66,6 +68,7 @@ export const SCHEMAS = [
       entities: { url: `${IOS}ifc4x3_entities.json`, sha256: "b869b4866d37d562ac62b04a1ad863b3806b313de50f727501e746bf3ea119a3" },
       types: { url: `${IOS}ifc4x3_types.json`, sha256: "0c5e8abf5c170a0e8dd2ad8290750b36858138b386c5185bdfcb108e0774f152" },
       properties: { url: `${IOS}ifc4x3_properties.json`, sha256: "2898fa5367a28e57fa74f808af151d73031ca8475d7f36cfe9e9d7f26a158b44" },
+      psets: { url: `${IOS}Pset_IFC4X3.ifc`, sha256: "41c5b181eabd56da0c298c9adebc9c6f3aeebabb41f1c916848681f798aa8455" },
     },
   },
   {

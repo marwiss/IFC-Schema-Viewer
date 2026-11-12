@@ -13,7 +13,7 @@
 import { namedRefs, aggregateText } from "../express/model.js";
 import { specRows, localName } from "../ifcx/schema.js";
 
-export const RELATIONS = ["subtype", "attribute", "derive", "inverse", "select", "underlying", "value", "uses", "reverse", "ifc5"];
+export const RELATIONS = ["subtype", "attribute", "derive", "inverse", "select", "underlying", "value", "pset", "uses", "reverse", "ifc5"];
 
 /** Limits that keep a graph readable. */
 export const CAPS = { reverse: 40, nodes: 500 };
@@ -60,8 +60,15 @@ function addExpress(el, model, name) {
   return n.id;
 }
 
+/** A node for a property or quantity set template: `p:<name>`. */
+function addSet(el, set) {
+  const id = `p:${set.name}`;
+  el.node(id, { label: set.name, kind: /^Qto_/.test(set.name) ? "qto" : "pset", w: width(set.name) });
+  return id;
+}
+
 /** Add the direct relations of `name` to `el`; returns the ids of the neighbours. */
-function expand(el, model, name, relations) {
+function expand(el, model, name, relations, psets = null) {
   const id = addExpress(el, model, name);
   const around = [];
   const link = (target, edgeId, data) => {
@@ -125,6 +132,12 @@ function expand(el, model, name, relations) {
       }
     }
   }
+  if (relations.has("pset") && entity && psets) {
+    for (const { set, predefined } of psets.forEntity(entity.name).own) {
+      const p = addSet(el, set);
+      el.edge(`pset:${id}>${p}${predefined ? `/${predefined}` : ""}`, id, p, { kind: "pset", label: predefined ?? undefined });
+    }
+  }
   if (relations.has("uses") && (entity || type)) {
     for (const m of model.mentions(name)) link(m, `use:${id}>${m}`, { kind: "uses" });
   }
@@ -146,7 +159,7 @@ function simpleName(type) {
 }
 
 /** The neighbourhood of an EXPRESS name: its relations, and with depth 2 those of its neighbours. */
-export function neighbourhood(model, name, { depth = 1, relations = new Set(RELATIONS) } = {}) {
+export function neighbourhood(model, name, { depth = 1, relations = new Set(RELATIONS), psets = null } = {}) {
   const el = new Elements();
   if (!model.kindOf(name)) return [];
   let ring = [model.canonical(name)];
@@ -156,8 +169,8 @@ export function neighbourhood(model, name, { depth = 1, relations = new Set(RELA
     for (const n of ring) {
       if (seen.has(n) || el.nodes.size > CAPS.nodes) continue;
       seen.add(n);
-      if (model.kindOf(n) === "simple") continue;
-      next.push(...expand(el, model, n, relations));
+      if (model.kindOf(n) === "simple" || !model.kindOf(n)) continue;
+      next.push(...expand(el, model, n, relations, psets));
     }
     ring = next;
   }
@@ -166,9 +179,28 @@ export function neighbourhood(model, name, { depth = 1, relations = new Set(RELA
 }
 
 /** The relations of one more node, to add to a graph already shown. */
-export function expansion(model, name, relations = new Set(RELATIONS)) {
+export function expansion(model, name, relations = new Set(RELATIONS), psets = null) {
   const el = new Elements();
-  if (model.kindOf(name) && model.kindOf(name) !== "simple") expand(el, model, name, relations);
+  if (model.kindOf(name) && model.kindOf(name) !== "simple") expand(el, model, name, relations, psets);
+  return el.list();
+}
+
+/** A property or quantity set: the entities it applies to, and its properties (`pp:<set>.<property>`). */
+export function psetGraph(model, set) {
+  const el = new Elements();
+  const p = addSet(el, set);
+  el.nodes.get(p).data.focus = true;
+  for (const a of set.applicable) {
+    if (!a.entity) continue;
+    const e = addExpress(el, model, a.entity);
+    el.edge(`pset:${e}>${p}${a.predefined ? `/${a.predefined}` : ""}`, e, p, { kind: "pset", label: a.predefined ?? undefined });
+  }
+  for (const prop of set.properties) {
+    const id = `pp:${set.name}.${prop.name}`;
+    const label = `${prop.name}${prop.measure ? `: ${prop.measure}` : ""}`;
+    el.node(id, { label, kind: "property", w: width(label) });
+    el.edge(`has:${id}`, p, id, { kind: "has" });
+  }
   return el.list();
 }
 
@@ -401,6 +433,11 @@ export function comparisonGraph(model, comparison, ifc5) {
   for (const n of comparison.named) {
     const c = addComponent(el, ifc5, n.key);
     el.edge(`ifc5:${id}>${n.key}`, id, c, { kind: "ifc5", label: "same name" });
+  }
+  for (const p of comparison.properties ?? []) {
+    const c = addComponent(el, ifc5, p.key);
+    const more = p.sets.length > 1 ? ` +${p.sets.length - 1}` : "";
+    el.edge(`ifc5:${id}>${p.key}`, id, c, { kind: "ifc5", label: `${p.sets[0]}.${p.property}${more}` });
   }
   return el.list();
 }

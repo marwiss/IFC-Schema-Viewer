@@ -322,6 +322,11 @@ button.nav:hover {
   border: 3px double var(--dm-cat-8);
 }
 
+.sw.pset {
+  border-color: var(--dm-cat-3);
+  border-radius: 0 var(--dm-radius-sm) var(--dm-radius-sm) 0;
+}
+
 .sw.component {
   border-color: var(--dm-cat-4);
   border-radius: var(--dm-radius-sm);
@@ -465,6 +470,11 @@ body.start .toolbar {
 .badge.component,
 .badge.namespace {
   border-color: var(--dm-cat-4);
+}
+
+.badge.pset,
+.badge.structure {
+  border-color: var(--dm-cat-3);
 }
 
 .badge.der {

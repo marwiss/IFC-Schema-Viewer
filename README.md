@@ -13,6 +13,8 @@ IFC schemas as a graph you can navigate, in the browser. A static page without a
 - **Structures**: 50 of IFC's structures (spatial structure, aggregation, types, groups, systems, zones, property and
   quantity sets, materials, classification, geometry, placement, georeferencing, ports, openings, space boundaries,
   processes, resources, costs, structural analysis, alignment …), each drawn from the schema of the chosen version.
+- **Property and quantity sets**: the Pset_ and Qto_ templates of each version with the entities they apply to and
+  their properties, on every entity, as nodes in the graph, and in the comparison with IFC5.
 - **Versions**: an entity or type across IFC2X3, IFC4 and IFC4X3 (new, changed and removed attributes, a changed
   supertype, new enumeration values), and what each schema adds and removes compared with the one before.
 - **Links**: every entity, type, attribute and property set links to its page in the standard.
@@ -82,6 +84,16 @@ of information. Each is drawn from the schema of the chosen version, with ELK fr
 - the names the version does not have, listed beside the graph rather than guessed (georeferencing in IFC2X3, for
   instance, or alignment before IFC4X3).
 
+## Property and quantity sets
+
+Property and quantity sets are not in the `.exp` files; they come from IfcOpenShell's property set templates
+(`Pset_IFC2X3.ifc`, `Pset_IFC4_ADD2.ifc`, `Pset_IFC4X3.ifc`: 317, 513 and 760 templates), STEP files read in the
+browser. Each template says which entities it applies to (`IfcWall,IfcWallType`, or with a predefined type,
+`IfcWall/PARAPET`), and has its properties with measure types and enumerations. An entity lists the sets that apply
+to it and, folded, those of its supertypes; the neighbourhood shows its own sets as tags (the `pset` relation), a set
+has its own page and graph, and the comparison with IFC5 matches IFC5 components to properties of the sets that apply
+to the entity: `bsi::ifc::prop::IsExternal` to `Pset_WallCommon.IsExternal`.
+
 ## Versions
 
 *Compare versions* on an entity or type loads the three EXPRESS schemas and shows, version by version, what changed
@@ -101,6 +113,7 @@ are not copied into this repository.
 | IFC4X3 ADD2 | [xBimTeam/XbimEssentials](https://github.com/xBimTeam/XbimEssentials) at fc40c51, `Schemas/IFC4X3_ADD2.exp` (the same bytes as ThatOpen/engine_web-ifc's copy) |
 | IFC5 | [ifcx.dev](https://ifcx.dev/) |
 | Links and descriptions | [IfcOpenShell](https://github.com/IfcOpenShell/IfcOpenShell) at 3e88479, `ifcopenshell/util/schema/ifc*_{entities,types,properties}.json` (LGPL-3.0-or-later) |
+| Property and quantity set templates | IfcOpenShell at 3e88479, `ifcopenshell/util/schema/Pset_IFC*.ifc` (LGPL-3.0-or-later) |
 
 The IFC schemas and their documentation are © buildingSMART International Limited; IFC is a trademark of buildingSMART
 International. This project is not affiliated with or endorsed by buildingSMART.

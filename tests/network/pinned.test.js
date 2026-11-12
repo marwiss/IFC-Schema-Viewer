@@ -15,6 +15,8 @@ import { loadDocs, safeUrl } from "../../src/docs.js";
 import { acrossVersions, schemaChanges } from "../../src/versions.js";
 import { STRUCTURES } from "../../src/structures.js";
 import { structureGraph } from "../../src/graph/elements.js";
+import { readPsetTemplates } from "../../src/psets.js";
+import { compareEntity } from "../../src/compare.js";
 
 const count = (text, word) => (text.match(new RegExp(`^\\s*${word}\\s`, "gm")) ?? []).length;
 const expected = {
@@ -95,6 +97,25 @@ test("every name in IFC's structures is in at least one version, and each struct
   const spatial = structureGraph(models[2], STRUCTURES[0]).elements;
   assert.ok(spatial.some((e) => e.data.label === "RelatingObject · IsDecomposedBy"));
   assert.ok(spatial.some((e) => e.data.id === "IfcFacility"));
+});
+
+test("the property set templates apply Pset_WallCommon to IfcWall, and IsExternal meets IFC5 through it", async () => {
+  const counts = { IFC2X3: 317, IFC4: 513, IFC4X3: 760 };
+  let ifc4x3 = null;
+  for (const schema of SCHEMAS.filter((s) => s.format === "express")) {
+    const model = buildModel(decode(await fetchPinned(schema.files[0], LIMITS.expressBytes)), { id: schema.id });
+    const psets = readPsetTemplates(decode(await fetchPinned(schema.docs.psets, LIMITS.jsonBytes)), model);
+    assert.equal(psets.sets.size, counts[schema.id], schema.id);
+    for (const set of psets.sets.values()) for (const a of set.applicable) assert.ok(a.entity, `${schema.id} ${set.name}: ${a.raw}`);
+    assert.ok(psets.forEntity("IfcWall").own.some((s) => s.set.name === "Pset_WallCommon"), schema.id);
+    if (schema.id === "IFC4X3") ifc4x3 = { model, psets };
+  }
+  const ifc5 = SCHEMAS.find((s) => s.id === "IFC5");
+  const files = await Promise.all(ifc5.files.map(async (f) => readIfcx(decode(await fetchPinned(f, LIMITS.jsonBytes)), { id: f.url, label: f.origin })));
+  const c = compareEntity("IfcWall", ifc4x3.model, buildIfcxModel(files), ifc4x3.model, ifc4x3.psets);
+  const external = c.properties.find((p) => p.key === "bsi::ifc::prop::IsExternal");
+  assert.ok(external.sets.includes("Pset_WallCommon"));
+  assert.equal(external.own, true);
 });
 
 test("a changed file is refused", async () => {

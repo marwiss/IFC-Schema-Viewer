@@ -57,6 +57,9 @@ export function graphStyle(t) {
     { selector: 'node[kind = "value"]', style: { height: 18, "font-size": 9, color: t["text-muted"], "border-color": t.border, shape: "round-rectangle" } },
     { selector: 'node[kind = "component"]', style: { shape: "round-rectangle", "border-width": 1.5, "border-color": t["cat-4"] } },
     { selector: 'node[kind = "member"]', style: { shape: "round-rectangle", "font-size": 10, "border-color": t["cat-4"], "border-style": "dashed" } },
+    { selector: 'node[kind = "pset"], node[kind = "qto"]', style: { shape: "tag", "border-width": 1.5, "border-color": t["cat-3"] } },
+    { selector: 'node[kind = "qto"]', style: { "border-style": "dashed" } },
+    { selector: 'node[kind = "property"]', style: { shape: "round-rectangle", height: 20, "font-size": 10, "border-color": t["cat-3"] } },
     {
       selector: 'node[kind = "namespace"]',
       style: {
@@ -110,6 +113,8 @@ export function graphStyle(t) {
     { selector: 'edge[kind = "value"]', style: { "line-color": t.border, "target-arrow-shape": "none" } },
     { selector: 'edge[kind = "uses"]', style: { "line-style": "dotted", "line-color": t["text-faint"], "target-arrow-color": t["text-faint"], "target-arrow-shape": "vee" } },
     { selector: 'edge[kind = "reverse"]', style: { "line-color": t["text-faint"], "target-arrow-color": t["text-faint"] } },
+    { selector: 'edge[kind = "pset"]', style: { "line-color": t["cat-3"], "target-arrow-color": t["cat-3"], "target-arrow-shape": "triangle-tee" } },
+    { selector: 'edge[kind = "has"]', style: { "line-color": t.border, "target-arrow-shape": "none" } },
     { selector: 'edge[kind = "relates"]', style: { width: 1.5, "line-color": t["cat-5"], "target-arrow-color": t["cat-5"] } },
     { selector: 'edge[kind = "member"]', style: { "line-color": t["cat-4"], "target-arrow-color": t["cat-4"] } },
     { selector: 'edge[kind = "ifc5"]', style: { "line-style": "dashed", "line-color": t["cat-4"], "target-arrow-color": t["cat-4"], "target-arrow-shape": "vee" } },

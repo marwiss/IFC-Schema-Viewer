@@ -33,7 +33,7 @@ function enumComparison(express, attr, spec) {
  * Compare an EXPRESS entity with IFC5. `classSchema` is the model of IFC4X3 ADD2, to say whether the code names a class
  * there (null when it is not loaded).
  */
-export function compareEntity(name, express, ifc5, classSchema) {
+export function compareEntity(name, express, ifc5, classSchema, psets = null) {
   const entity = express.entity(name);
   if (!entity) return null;
   const code = entity.name;
@@ -59,7 +59,28 @@ export function compareEntity(name, express, ifc5, classSchema) {
         }))
     : [];
   const usage = ifc5?.classIndex.get(code) ?? null;
+  // IFC5 components named like a property in a set that applies to the entity, its own sets first.
+  const properties = [];
+  if (ifc5 && psets) {
+    const { own, inherited } = psets.forEntity(code);
+    const sets = [...own, ...inherited];
+    const matched = new Set(attributes.flatMap((a) => a.components));
+    for (const c of ifc5.components.values()) {
+      if (matched.has(c.key)) continue;
+      const holders = sets.filter((s) => s.set.properties.some((p) => p.name === c.name));
+      if (holders.length) {
+        properties.push({
+          key: c.key,
+          property: c.name,
+          sets: [...new Set(holders.map((h) => h.set.name))],
+          own: holders.some((h) => !h.from),
+        });
+      }
+    }
+    properties.sort((a, b) => Number(b.own) - Number(a.own) || a.key.localeCompare(b.key));
+  }
   return {
+    properties,
     code,
     uri: bsddClassUri(code),
     classComponent: ifc5?.component(CLASS_KEY) ? CLASS_KEY : null,

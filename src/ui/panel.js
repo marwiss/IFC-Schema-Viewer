@@ -164,11 +164,133 @@ export function renderEntity(panel, model, name, app) {
     attributesBlock(model, e, app),
     rulesBlock(e),
     mentionsBlock(model, e.name, app),
+    psetsSection(model, e.name, app),
     usedByBlock(model, e.name, app),
     versionsSection(e.name, app),
     section("IFC5", compare),
     sourceBlock(model, e),
   );
+}
+
+/** The property and quantity sets that apply to an entity, filled in when the templates have come. */
+function psetsSection(model, name, app) {
+  const holder = el("div", {}, muted("Looking up the property set templates…"));
+  const setLink = (s) => [nav(s.set.name, () => app.navigate(`p:${s.set.name}`, "near")), s.predefined ? el("span", { class: "muted" }, ` /${s.predefined}`) : null];
+  app
+    .psets(model)
+    .then((psets) => {
+      if (!psets) {
+        replace(holder, muted("No property set templates for this schema."));
+        return;
+      }
+      const { own, inherited } = psets.forEntity(name);
+      const byFrom = new Map();
+      for (const s of inherited) {
+        if (!byFrom.has(s.from)) byFrom.set(s.from, []);
+        byFrom.get(s.from).push(s);
+      }
+      replace(
+        holder,
+        own.length ? el("p", { class: "names" }, own.map((s) => el("span", {}, setLink(s)))) : muted("None for this entity itself."),
+        [...byFrom].map(([from, sets]) =>
+          el("details", { class: "block" }, el("summary", {}, `From ${from} (${sets.length})`), el("p", { class: "names" }, sets.map((s) => el("span", {}, setLink(s))))),
+        ),
+      );
+    })
+    .catch((error) => replace(holder, muted(`The templates could not be read: ${error.message}`)));
+  return section("Property and quantity sets", holder);
+}
+
+const KINDS = {
+  P_SINGLEVALUE: "single value",
+  P_ENUMERATEDVALUE: "enumerated value",
+  P_BOUNDEDVALUE: "bounded value",
+  P_LISTVALUE: "list value",
+  P_TABLEVALUE: "table value",
+  P_REFERENCEVALUE: "reference",
+  Q_LENGTH: "length",
+  Q_AREA: "area",
+  Q_VOLUME: "volume",
+  Q_COUNT: "count",
+  Q_WEIGHT: "weight",
+  Q_TIME: "time",
+};
+
+/** A property or quantity set template: what it applies to and its properties. */
+export function renderPset(panel, model, set, app) {
+  const doc = el("div", { class: "doc" });
+  app
+    .docs(model, "properties")
+    .then((docs) => {
+      const entry = docEntry(docs, set.name);
+      replace(doc, entry ? el("p", {}, extLink(entry.spec_url, "Open in the standard ↗")) : null);
+    })
+    .catch(() => {});
+  const rows = set.properties.map((p) => {
+    const measure = p.measure && model.kindOf(p.measure) ? nav(p.measure, () => app.navigate(p.measure, "near")) : p.measure ?? "";
+    return [
+      el(
+        "tr",
+        { class: "attr" },
+        el("td", {}, el("strong", {}, p.name)),
+        el("td", {}, measure),
+        el("td", { class: "flags" }, p.kind ? badge(KINDS[p.kind] ?? p.kind.toLowerCase()) : null),
+      ),
+      el(
+        "tr",
+        { class: "desc" },
+        el(
+          "td",
+          { colspan: 3, class: "attr-desc" },
+          p.enumeration ? el("div", {}, el("code", {}, p.enumeration.values.join(", "))) : null,
+          summary(p.description, 300),
+        ),
+      ),
+    ];
+  });
+  const ifc5 = el("div", {}, el("button", { type: "button", class: "button", onclick: () => ifc5Properties(ifc5, set, app) }, "Find in IFC5"));
+  replace(
+    panel,
+    el("header", { class: "head" }, el("h2", {}, set.name), badge(/^Qto_/.test(set.name) ? "QUANTITY SET" : "PROPERTY SET", "pset"), badge(model.label, "faint")),
+    doc,
+    summary(set.description) ? el("p", { class: "desc" }, summary(set.description)) : null,
+    set.templateType ? el("p", { class: "muted" }, `Template type ${set.templateType}`) : null,
+    section(
+      `Applies to (${set.applicable.length})`,
+      el(
+        "p",
+        { class: "names" },
+        set.applicable.map((a) =>
+          a.entity
+            ? el("span", {}, nav(a.entity, () => app.navigate(a.entity, "near")), a.predefined ? el("span", { class: "muted" }, ` /${a.predefined}`) : null)
+            : el("code", { title: "Not an entity of this schema" }, a.raw),
+        ),
+      ),
+    ),
+    section(
+      `${/^Qto_/.test(set.name) ? "Quantities" : "Properties"} (${set.properties.length})`,
+      el("table", { class: "attrs" }, el("thead", {}, el("tr", {}, el("th", {}, "Name"), el("th", {}, "Type"), el("th", {}, ""))), el("tbody", {}, rows)),
+    ),
+    section("IFC5", ifc5),
+    muted("From IfcOpenShell's property set templates (Pset_IFC*.ifc), read as data."),
+  );
+}
+
+async function ifc5Properties(holder, set, app) {
+  replace(holder, muted("Loading IFC5…"));
+  try {
+    const ifc5 = await app.ifc5();
+    const found = set.properties.flatMap((p) => ifc5.byLocalName(p.name).map((c) => ({ property: p.name, key: c.key })));
+    replace(
+      holder,
+      found.length
+        ? el("ul", { class: "plain" }, found.map((f) => el("li", {}, `${f.property} → `, nav(f.key, () => app.navigate(f.key, "near", ifc5.id)))))
+        : muted("No IFC5 component has the name of one of these properties."),
+      muted("Matched by name: an interpretation, not something the schemas state."),
+    );
+  } catch (error) {
+    replace(holder, muted(`IFC5 could not be loaded: ${error.message}`));
+  }
 }
 
 /** "In other versions": a button that loads the three EXPRESS schemas and shows what changed between them. */
@@ -323,11 +445,34 @@ async function compareBlock(holder, model, name, app) {
         el("ul", { class: "plain" }, c.usage.components.map(([k, n]) => el("li", {}, ifc5.component(k) ? nav(k, () => app.navigate(k, "near", ifc5.id)) : el("code", {}, k), ` × ${n}`))),
       )
     : muted("Open an IFC5 data file (.ifcx) to see which components stand with this class code.");
+  const properties = c.properties?.length
+    ? section(
+        `Properties in its property sets (${c.properties.length})`,
+        el(
+          "table",
+          { class: "attrs" },
+          el("thead", {}, el("tr", {}, el("th", {}, "IFC5 component"), el("th", {}, "Property set"))),
+          el(
+            "tbody",
+            {},
+            c.properties.map((p) =>
+              el(
+                "tr",
+                {},
+                el("td", {}, nav(p.key, () => app.navigate(p.key, "near", ifc5.id))),
+                el("td", {}, p.sets.map((s, i) => [i ? ", " : "", nav(`${s}.${p.property}`, () => app.navigate(`p:${s}`, "near"))]), p.own ? "" : el("span", { class: "muted" }, " (inherited)")),
+              ),
+            ),
+          ),
+        ),
+      )
+    : null;
   replace(
     holder,
     classRow,
     el("p", { class: "muted" }, `${matched} of ${c.attributes.length} attributes have an IFC5 component with the same name. Matched by name: an interpretation, not something the schemas state.`),
     el("table", { class: "attrs" }, el("thead", {}, el("tr", {}, el("th", {}, "Attribute"), el("th", {}, "Declared in"), el("th", {}, "IFC5 component"))), el("tbody", {}, rows)),
+    properties,
     named,
     usage,
   );

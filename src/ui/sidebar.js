@@ -29,8 +29,8 @@ function filtered(names, query) {
   return { shown: found.slice(0, SHOWN), more: Math.max(0, found.length - SHOWN) };
 }
 
-/** Fill `node` with the names of an EXPRESS model, and IFC's structures first. */
-export function renderExpressList(node, model, query, current, go) {
+/** Fill `node` with the names of an EXPRESS model, IFC's structures first and the property sets when loaded. */
+export function renderExpressList(node, model, query, current, go, psets = null) {
   const entities = filtered([...model.entities.values()].map((e) => e.name).sort(), query);
   const types = filtered([...model.types.values()].map((t) => t.name).sort(), query);
   const algorithms = filtered([...model.algorithms.values()].map((a) => a.name).sort(), query);
@@ -40,10 +40,13 @@ export function renderExpressList(node, model, query, current, go) {
     label: s.en,
     title: `${s.sv}: ${s.about}`,
   }));
+  const sets = psets ? filtered([...psets.sets.values()].map((s) => s.name).sort(), query) : { shown: [], more: 0 };
+  const setItems = sets.shown.map((n) => ({ id: `p:${n}`, label: n }));
   const groups = [
     group("Structures", structures, current, go, 0, Boolean(q) || String(current ?? "").startsWith("s:")),
     group("Entities", entities.shown, current, go, entities.more),
     group("Types", types.shown, current, go, types.more),
+    group("Property and quantity sets", setItems, current, go, sets.more, Boolean(q) || String(current ?? "").startsWith("p:")),
     group("Functions and rules", algorithms.shown, current, go, algorithms.more),
   ].filter(Boolean);
   replace(node, groups.length ? groups : el("p", { class: "muted" }, "Nothing matches."));

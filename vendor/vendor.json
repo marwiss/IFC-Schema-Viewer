@@ -1,0 +1,50 @@
+{
+  "cytoscape": {
+    "version": "3.34.4",
+    "license": "MIT",
+    "homepage": "https://js.cytoscape.org/",
+    "integrity": "sha512-msY99tMY8iWTg+sIPGfSqDcPNOt4xcj+v/K/7qUFaCUxxlqnMkUYLBjRUzn9W5CU/R2hrmtJa5+UtovrEM2ctg==",
+    "files": {"package/dist/cytoscape.min.js": "cytoscape.min.js", "package/LICENSE": "LICENSE"},
+    "notes": "Graph rendering and interaction (UMD, global `cytoscape`)."
+  },
+  "layout-base": {
+    "version": "2.0.1",
+    "license": "MIT",
+    "homepage": "https://github.com/iVis-at-Bilkent/layout-base",
+    "integrity": "sha512-dp3s92+uNI1hWIpPGH3jK2kxE2lMjdXdr+DH8ynZHpd6PUlH6x6cbuXnoMmiNumznqaNO31xu9e79F0uuZ0JFg==",
+    "files": {"package/layout-base.js": "layout-base.js", "package/LICENSE": "LICENSE"},
+    "notes": "Base classes of the i-Vis layouts (global `layoutBase`), needed by cose-base."
+  },
+  "cose-base": {
+    "version": "2.2.0",
+    "license": "MIT",
+    "homepage": "https://github.com/iVis-at-Bilkent/cose-base",
+    "integrity": "sha512-AzlgcsCbUMymkADOJtQm3wO9S3ltPfYOFD5033keQn9NJzIbtnZj+UdBJe7DYml/8TdbtHJW3j58SOnKhWY/5g==",
+    "files": {"package/cose-base.js": "cose-base.js", "package/LICENSE": "LICENSE"},
+    "notes": "CoSE layout core (global `coseBase`), needed by cytoscape-fcose."
+  },
+  "cytoscape-fcose": {
+    "version": "2.2.0",
+    "license": "MIT",
+    "homepage": "https://github.com/iVis-at-Bilkent/cytoscape.js-fcose",
+    "integrity": "sha512-ki1/VuRIHFCzxWNrsshHYPs6L7TvLu3DL+TyIGEsRcvVERmxokbf5Gdk7mFxZnTdiGtnA4cfSmjZJMviqSuZrQ==",
+    "files": {"package/cytoscape-fcose.js": "cytoscape-fcose.js", "package/LICENSE": "LICENSE"},
+    "notes": "The fCoSE force-directed layout (global `cytoscapeFcose`) for the neighbourhoods."
+  },
+  "elkjs": {
+    "version": "0.12.1",
+    "license": "EPL-2.0 OR GPL-3.0-or-later",
+    "homepage": "https://github.com/kieler/elkjs",
+    "integrity": "sha512-IhMYKHE4S2vtx0QrhBP3lYOIKDeIiJXBrdq9MGYkuB8ZHqhrBnHNfSUndjXFewrX1CPK8chwq+2NA0K0hliYuw==",
+    "files": {"package/lib/elk.bundled.js": "elk.bundled.js", "package/LICENSE.md": "LICENSE.md"},
+    "notes": "The Eclipse Layout Kernel (global `ELK`) for the inheritance tree; used here under GPL-3.0-or-later, which combines with this project's AGPL-3.0-or-later."
+  },
+  "cytoscape-elk": {
+    "version": "2.3.0",
+    "license": "MIT",
+    "homepage": "https://github.com/cytoscape/cytoscape.js-elk",
+    "integrity": "sha512-1h2ZmPOy5HD2+mrfF3P2ICxfnDyPCWg/xLVs7fIjTOzdQu51ydrMtm6Sb7KnhFwLBzhGIVYI2Gbns0njggBarQ==",
+    "files": {"package/dist/cytoscape-elk.js": "cytoscape-elk.js", "package/LICENSE": "LICENSE"},
+    "notes": "The ELK layout adapter for Cytoscape (global `cytoscapeElk`, reads the global `ELK`)."
+  }
+}

@@ -1,0 +1,92 @@
+(* A small schema for the tests; (* remarks nest *) and are skipped. *)
+SCHEMA MINI;
+
+TYPE IfcLabel = STRING(255);
+END_TYPE;
+
+TYPE IfcGloballyUniqueId = STRING(22) FIXED;
+END_TYPE;
+
+TYPE IfcPositiveLengthMeasure = IfcLengthMeasure;
+ WHERE
+  WR1 : SELF > 0.;
+END_TYPE;
+
+TYPE IfcLengthMeasure = REAL;
+END_TYPE;
+
+TYPE IfcWallTypeEnum = ENUMERATION OF
+  (MOVABLE
+  ,PARAPET
+  ,USERDEFINED);
+END_TYPE;
+
+TYPE IfcValue = SELECT
+  (IfcLabel
+  ,IfcLengthMeasure);
+END_TYPE;
+
+TYPE IfcLineIndex = LIST [2:?] OF INTEGER;
+END_TYPE;
+
+ENTITY IfcRoot
+ ABSTRACT SUPERTYPE OF (ONEOF
+  (IfcObject
+  ,IfcRelSpaceBoundary));
+  GlobalId : IfcGloballyUniqueId;
+  Name : OPTIONAL IfcLabel; -- a tail remark
+ UNIQUE
+  UR1 : GlobalId;
+END_ENTITY;
+
+ENTITY IfcObject
+ SUBTYPE OF (IfcRoot);
+  Points : LIST [1:?] OF UNIQUE LIST [2:3] OF IfcLengthMeasure;
+ INVERSE
+  BoundedBy : SET [0:?] OF IfcRelSpaceBoundary FOR RelatingSpace;
+END_ENTITY;
+
+ENTITY IfcWall
+ SUBTYPE OF (IfcObject);
+  PredefinedType : OPTIONAL IfcWallTypeEnum;
+  Height : IfcPositiveLengthMeasure;
+ DERIVE
+  SELF\IfcRoot.Name : IfcLabel := 'Wall';
+  Area : IfcLengthMeasure := Height * 2.0;
+ WHERE
+  CorrectType : NOT(EXISTS(PredefinedType)) OR ('MINI.IFCWALLTYPEENUM' IN TYPEOF(PredefinedType));
+  Semicolon : Name <> 'a;b''c';
+  Checked : IfcCheck(SELF);
+END_ENTITY;
+
+ENTITY IfcRelSpaceBoundary
+ SUBTYPE OF (IfcRoot);
+  RelatingSpace : IfcObject;
+  Value : OPTIONAL IfcValue;
+END_ENTITY;
+
+FUNCTION IfcCheck
+  (Arg : IfcRoot) : LOGICAL;
+  LOCAL
+    Inner : INTEGER := 0;
+  END_LOCAL;
+  IF Inner > 0 THEN
+    RETURN (FALSE);
+  END_IF;
+  RETURN (TRUE);
+END_FUNCTION;
+
+RULE IfcSingleRoot FOR (IfcRoot);
+WHERE
+  WR1 : SIZEOF(IfcRoot) >= 0;
+END_RULE;
+
+ENTITY IfcBroken
+  Oops : ;
+END_ENTITY;
+
+ENTITY IfcAfterBroken;
+  Fine : IfcLabel;
+END_ENTITY;
+
+END_SCHEMA;

@@ -199,6 +199,113 @@ export function inheritanceTree(model, name, { whole = false } = {}) {
   return el.list();
 }
 
+// IFC's structures
+
+const ROOT_ATTRIBUTES = new Set(["GLOBALID", "OWNERHISTORY", "NAME", "DESCRIPTION"]);
+
+/**
+ * A structure (structures.js) in a schema: its classes, the subtypes it asks for, its relationships as their own nodes
+ * (`rel`), each relationship's attributes to the classes they point at (kind `relates`, labelled with the attribute and
+ * the inverse attributes that point back), the attributes between the classes shown, and the subtype lines between
+ * them. Returns the elements and which of the structure's names the schema has and lacks.
+ */
+export function structureGraph(model, structure) {
+  const el = new Elements();
+  const shown = new Set();
+  const present = [];
+  const missing = [];
+  const show = (name) => {
+    const kind = model.kindOf(name);
+    if (!kind || kind === "simple" || kind === "function" || kind === "rule" || kind === "procedure") return null;
+    const id = addExpress(el, model, name);
+    const data = el.nodes.get(id).data;
+    if (model.isRelationship(id) && !data.rel) {
+      data.rel = true;
+      data.w = Math.round(data.w * 1.4); // a diamond needs more width for the same label
+    }
+    shown.add(id.toUpperCase());
+    return id;
+  };
+  for (const name of structure.names) {
+    if (show(name)) present.push(model.canonical(name));
+    else missing.push(name);
+  }
+  for (const s of structure.subtypes ?? []) {
+    if (!model.entity(s.of)) continue;
+    let level = [model.canonical(s.of)];
+    for (let d = 0; d < s.depth; d++) {
+      level = level.flatMap((n) => model.entity(n)?.subtypes ?? []);
+      for (const n of level) show(n);
+    }
+  }
+  const isShown = (name) => shown.has(String(name).toUpperCase());
+
+  // The relationships' attributes, with the entities (or SELECT types) they point at. An attribute that a shown
+  // relationship declares is drawn from it alone, not again from its shown subtypes; values such as enumerations are
+  // left to the relationship's own details.
+  const structural = (r) => {
+    const kind = model.kindOf(r);
+    return kind === "entity" || kind === "select";
+  };
+  for (const id of [...el.nodes.keys()]) {
+    if (!model.isRelationship(id)) continue;
+    for (const a of model.allAttributes(id)) {
+      if (a.kind !== "explicit" || (ROOT_ATTRIBUTES.has(a.name.toUpperCase()) && a.declaredIn.toUpperCase() === "IFCROOT")) continue;
+      if (a.declaredIn.toUpperCase() !== id.toUpperCase() && isShown(a.declaredIn)) continue;
+      const agg = aggregateText(a.attr.type);
+      const inverses = model.inversesOf(id, a.name).map((i) => i.name);
+      const label = `${a.name}${agg ? ` ${agg}` : ""}${inverses.length ? ` · ${[...new Set(inverses)].join(", ")}` : ""}`;
+      for (const r of namedRefs(a.attr.type).filter(structural)) {
+        const t = show(r);
+        if (t) el.edge(`rel:${id}.${a.name}>${t}`, id, t, { kind: "relates", label, optional: a.attr.optional });
+      }
+    }
+  }
+
+  // Attributes between the classes shown, also through a SELECT whose members are shown.
+  const selectMembers = (name, seen = new Set()) => {
+    const t = model.type(name);
+    if (!t || t.kind !== "select" || seen.has(t.name)) return [];
+    seen.add(t.name);
+    return t.underlying.items.flatMap((i) => (model.type(i)?.kind === "select" ? selectMembers(i, seen) : [i]));
+  };
+  for (const id of [...el.nodes.keys()]) {
+    const e = model.entity(id);
+    if (!e || model.isRelationship(id)) continue;
+    for (const a of e.explicit) {
+      for (const r of namedRefs(a.type)) {
+        const targets = isShown(r) ? [r] : selectMembers(r).filter(isShown);
+        const agg = aggregateText(a.type);
+        for (const t of targets) {
+          const target = model.canonical(t);
+          el.edge(`attr:${id}.${a.name}>${target}`, id, target, { kind: "attribute", label: `${a.name}${agg ? ` ${agg}` : ""}`, optional: a.optional });
+        }
+      }
+    }
+  }
+
+  // A SELECT shown is joined to those of its members that are shown.
+  for (const id of [...el.nodes.keys()]) {
+    if (model.type(id)?.kind !== "select") continue;
+    for (const item of selectMembers(id).filter(isShown)) {
+      const target = model.canonical(item);
+      el.edge(`sel:${id}>${target}`, id, target, { kind: "select" });
+    }
+  }
+
+  // Subtype lines to the nearest supertype shown; when classes between them are left out, the line says which.
+  for (const id of [...el.nodes.keys()]) {
+    if (!model.entity(id)) continue;
+    const chain = model.ancestors(id);
+    const at = chain.findIndex(isShown);
+    if (at < 0) continue;
+    const parent = chain[at];
+    const via = chain.slice(0, at);
+    el.edge(`sub:${parent}>${id}`, parent, id, via.length ? { kind: "subtype", via: true, label: `via ${via.join(", ")}` } : { kind: "subtype" });
+  }
+  return { elements: el.list(), present, missing };
+}
+
 // IFC5
 
 const nsId = (ns) => `ns:${ns || "(none)"}`;

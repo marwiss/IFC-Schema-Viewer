@@ -387,6 +387,26 @@ function usedByMentions(model, name, app) {
   return section(`Mentioned in the rules of (${users.length})`, el("p", { class: "names" }, users.map((u) => nav(u, () => app.navigate(u)))));
 }
 
+/** One of IFC's structures in a schema: what it is, the names in its graph, and what the version lacks. */
+export function renderStructure(panel, model, structure, graph, app) {
+  const nodes = graph.elements.filter((e) => e.group === "nodes").map((e) => e.data);
+  const rels = nodes.filter((d) => d.rel).map((d) => d.id).sort();
+  const classes = nodes.filter((d) => !d.rel).map((d) => d.id).sort();
+  const names = (list) => el("p", { class: "names" }, list.map((n) => nav(n, () => app.navigate(n, "near"))));
+  replace(
+    panel,
+    el("header", { class: "head" }, el("h2", {}, structure.en), badge("STRUCTURE", "structure"), badge(model.label, "faint")),
+    el("p", { class: "muted" }, structure.sv),
+    el("p", {}, structure.about),
+    rels.length ? section(`Relationships (${rels.length})`, names(rels)) : null,
+    section(`Classes and types (${classes.length})`, names(classes)),
+    graph.missing.length ? section(`Not in ${model.label}`, el("p", { class: "names" }, graph.missing.map((n) => el("code", {}, n)))) : null,
+    muted(
+      "Relationships are drawn as diamonds. A line from a relationship is one of its attributes, followed after · by the inverse attributes that point back at it; a dashed line is OPTIONAL. Click a name for its details and its own neighbourhood.",
+    ),
+  );
+}
+
 export function renderSimple(panel, model, name) {
   replace(
     panel,
@@ -512,6 +532,7 @@ export function renderExpressStart(panel, model, app) {
     el("p", {}, `Schema ${model.schema}: ${c.entities} entities, ${c.types} types, ${c.functions} functions and ${c.rules} rules.`),
     c.errors ? el("p", { class: "warn" }, `${c.errors} declarations could not be read and are left out.`) : null,
     c.skipped ? muted(`${c.skipped} declarations of kinds the IFC schemas do not use were skipped.`) : null,
+    el("p", {}, "Start from one of IFC's structures in the list (spatial structure, aggregation, types, materials, placement …), or from an entity."),
     section(`Roots (${model.roots().length})`, el("p", { class: "names" }, model.roots().map((r) => nav(r, () => app.navigate(r))))),
     schemaVersionSection(model, app),
   );

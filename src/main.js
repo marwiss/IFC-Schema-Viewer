@@ -12,7 +12,8 @@ import { buildModel } from "./express/model.js";
 import { readIfcx, buildIfcxModel } from "./ifcx/schema.js";
 import { loadDocs, docEntry, safeUrl } from "./docs.js";
 import { compareEntity } from "./compare.js";
-import { RELATIONS, neighbourhood, expansion, inheritanceTree, ifcxOverview, ifcxComponent, comparisonGraph } from "./graph/elements.js";
+import { RELATIONS, neighbourhood, expansion, inheritanceTree, ifcxOverview, ifcxComponent, comparisonGraph, structureGraph } from "./graph/elements.js";
+import { structureById } from "./structures.js";
 import { createGraph, treeLayout, nearLayout } from "./graph/view.js";
 import { el, replace } from "./ui/dom.js";
 import { renderExpressList, renderIfcxList } from "./ui/sidebar.js";
@@ -136,8 +137,13 @@ function renderList() {
 
 // The panel for a name
 
+/** The structure a focus `s:<id>` names, or null. */
+const structureOf = (focus) => (typeof focus === "string" && focus.startsWith("s:") ? structureById(focus.slice(2)) : null);
+
 function showPanel(model, name) {
   const panel = $("panel");
+  const structure = model.format === "express" ? structureOf(name) : null;
+  if (structure) return panels.renderStructure(panel, model, structure, structureGraph(model, structure), app);
   if (model.format === "express") {
     const kind = name ? model.kindOf(name) : null;
     if (kind === "entity") return panels.renderEntity(panel, model, name, app);
@@ -226,6 +232,14 @@ async function drawGraph(model, focus, token) {
   let elements;
   let layout;
   let classes = "";
+  const structure = model.format === "express" ? structureOf(focus) : null;
+  if (structure) {
+    elements = structureGraph(model, structure).elements;
+    await g.show(elements, { ...treeLayout("DOWN", 90), elk: { ...treeLayout("DOWN", 90).elk, "elk.spacing.nodeNode": 40 } });
+    if (token !== renderToken) return;
+    status(`${model.label}: ${structure.en}, ${elements.filter((e) => e.group === "nodes").length} nodes. Click a name for its details, double-click to expand.`);
+    return;
+  }
   if (model.format === "express") {
     const name = focus && model.kindOf(focus) ? focus : model.entity("IfcRoot") ? "IfcRoot" : model.roots()[0];
     const isEntity = model.kindOf(name) === "entity";
@@ -300,12 +314,16 @@ async function render() {
   current = model;
   if (model.format === "ifcx" && state.view !== "all") state.view = "near";
   let missing = null;
-  const known = model.format === "express" ? model.kindOf(state.focus ?? "") : model.component(state.focus ?? "") || state.focus?.startsWith("ns:");
+  const known =
+    model.format === "express"
+      ? model.kindOf(state.focus ?? "") || structureOf(state.focus)
+      : model.component(state.focus ?? "") || state.focus?.startsWith("ns:");
   if (state.focus && !known) {
     missing = `${state.focus} is not in ${model.label}.`;
     state.focus = null;
   }
-  if (state.focus && model.format === "express") state.focus = model.canonical(state.focus);
+  if (state.focus && model.format === "express" && !structureOf(state.focus)) state.focus = model.canonical(state.focus);
+  if (structureOf(state.focus)) state.view = "near";
   $("source").textContent = info ? info.notice : `${local.get(state.schemaId)?.label} (opened from your computer)`;
   viewButtons();
   renderList();

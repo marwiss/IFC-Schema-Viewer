@@ -192,6 +192,24 @@ export function buildModel(text, meta = {}) {
     /** Who refers to the name: `{from, via, kind}`. */
     usedBy: (name) => usedBy.get(key(name)) ?? [],
 
+    /** The inverse attributes that point back at attribute `attr` of entity `name` or of one of its supertypes. */
+    inversesOf(name, attr) {
+      const owners = new Set([name, ...model.ancestors(name)].map(key));
+      const found = [];
+      for (const e of entities.values()) {
+        for (const inv of e.inverse) {
+          if (owners.has(key(inv.entity)) && key(inv.forAttribute) === key(attr)) found.push({ entity: e.name, name: inv.name });
+        }
+      }
+      return found;
+    },
+
+    /** Whether the entity is an objectified relationship (a subtype of IfcRelationship). */
+    isRelationship(name) {
+      const e = entities.get(key(name));
+      return Boolean(e) && key(e.name) !== "IFCRELATIONSHIP" && model.ancestors(e.name).some((a) => key(a) === "IFCRELATIONSHIP");
+    },
+
     /** The declared names that the rules and derivations of an entity or type mention. */
     mentions(name) {
       const item = entities.get(key(name)) ?? types.get(key(name));

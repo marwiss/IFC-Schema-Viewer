@@ -21,7 +21,7 @@ function register() {
 }
 
 /** ELK's layered (Sugiyama) layout for trees, supertypes to the left (RIGHT) or at the top (DOWN). */
-export function treeLayout(direction = "RIGHT") {
+export function treeLayout(direction = "RIGHT", layerSpacing = 32) {
   const algorithm = "layered";
   return {
     name: "elk",
@@ -33,7 +33,7 @@ export function treeLayout(direction = "RIGHT") {
       algorithm,
       "elk.direction": direction,
       "elk.spacing.nodeNode": 10,
-      "elk.layered.spacing.nodeNodeBetweenLayers": 32,
+      "elk.layered.spacing.nodeNodeBetweenLayers": layerSpacing,
       "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
     },
   };

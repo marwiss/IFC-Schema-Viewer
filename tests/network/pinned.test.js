@@ -13,6 +13,8 @@ import { buildModel } from "../../src/express/model.js";
 import { readIfcx, buildIfcxModel } from "../../src/ifcx/schema.js";
 import { loadDocs, safeUrl } from "../../src/docs.js";
 import { acrossVersions, schemaChanges } from "../../src/versions.js";
+import { STRUCTURES } from "../../src/structures.js";
+import { structureGraph } from "../../src/graph/elements.js";
 
 const count = (text, word) => (text.match(new RegExp(`^\\s*${word}\\s`, "gm")) ?? []).length;
 const expected = {
@@ -79,6 +81,20 @@ test("IfcWall changes as IFC2X3 becomes IFC4 and IFC4X3", async () => {
   const d = schemaChanges(versions[1].model, versions[2].model);
   assert.ok(d.addedEntities.includes("IfcBuiltElement"));
   assert.ok(d.removedEntities.includes("IfcBuildingElement"));
+});
+
+test("every name in IFC's structures is in at least one version, and each structure draws in IFC4X3", async () => {
+  const models = [];
+  for (const schema of SCHEMAS.filter((s) => s.format === "express")) {
+    models.push(buildModel(decode(await fetchPinned(schema.files[0], LIMITS.expressBytes)), { id: schema.id }));
+  }
+  for (const s of STRUCTURES) {
+    for (const n of s.names) assert.ok(models.some((m) => m.kindOf(n)), `${s.id}: ${n} is in no version`);
+    assert.ok(structureGraph(models[2], s).present.length, s.id);
+  }
+  const spatial = structureGraph(models[2], STRUCTURES[0]).elements;
+  assert.ok(spatial.some((e) => e.data.label === "RelatingObject · IsDecomposedBy"));
+  assert.ok(spatial.some((e) => e.data.id === "IfcFacility"));
 });
 
 test("a changed file is refused", async () => {

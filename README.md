@@ -10,6 +10,9 @@ IFC schemas as a graph you can navigate, in the browser. A static page without a
   `usd@v1`, `nlsfb@v1`), read as JSON, with their components grouped per namespace.
 - **Comparison**: an EXPRESS entity beside IFC5, through the code of `bsi::ifc::class` and the components that have the
   names of its attributes.
+- **Structures**: 50 of IFC's structures (spatial structure, aggregation, types, groups, systems, zones, property and
+  quantity sets, materials, classification, geometry, placement, georeferencing, ports, openings, space boundaries,
+  processes, resources, costs, structural analysis, alignment …), each drawn from the schema of the chosen version.
 - **Versions**: an entity or type across IFC2X3, IFC4 and IFC4X3 (new, changed and removed attributes, a changed
   supertype, new enumeration values), and what each schema adds and removes compared with the one before.
 - **Links**: every entity, type, attribute and property set links to its page in the standard.
@@ -64,6 +67,20 @@ entity against a component named like it (`IfcAlignmentHorizontalSegment` →
 `bsi::ifc::alignmenthorizontalsegment`), its attributes against that component's members, enumerations against Enum
 options, and an IFC5 property against the IFC 4.3 property sets that have it. With an IFC5 data file opened, it also
 shows which components stand on the paths that carry a given class code.
+
+## Structures
+
+The list starts with IFC's structures: patterns of classes and objectified relationships that together carry one kind
+of information. Each is drawn from the schema of the chosen version, with ELK from the top down:
+
+- the classes of the structure, and the subtypes it asks for (the spatial structure shows the site, facility,
+  building, storey and space classes, and in IFC4X3 the bridge, road, railway and marine facilities and their parts);
+- each relationship (IfcRel…) as a diamond, with a line for each of its attributes to the class it points at,
+  labelled with the attribute and, after ·, the inverse attributes that point back (`RelatingObject · IsDecomposedBy`);
+- the attributes between the classes shown, the members of a SELECT, and a subtype line to the nearest supertype
+  shown, dashed and saying which classes it skips when some are left out;
+- the names the version does not have, listed beside the graph rather than guessed (georeferencing in IFC2X3, for
+  instance, or alignment before IFC4X3).
 
 ## Versions
 

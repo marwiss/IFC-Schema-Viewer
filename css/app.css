@@ -633,6 +633,20 @@ table.attrs tr.expr td {
   margin-top: var(--dm-s-3);
 }
 
+.added {
+  color: var(--dm-ok);
+  font-weight: var(--dm-weight-semibold);
+}
+
+.removed {
+  color: var(--dm-error);
+  font-weight: var(--dm-weight-semibold);
+}
+
+table.versions td:first-child {
+  white-space: nowrap;
+}
+
 /* Status bar */
 
 .statusbar {

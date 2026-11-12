@@ -12,6 +12,7 @@ import { typeText, namedRefs } from "../express/model.js";
 import { specText, specRows, localName, CLASS_KEY } from "../ifcx/schema.js";
 import { docEntry, summary, ifc43PageUrl, ifc43PropertyUrl, setsWithProperty } from "../docs.js";
 import { componentMatches } from "../compare.js";
+import { acrossVersions, schemaChanges } from "../versions.js";
 
 const badge = (text, kind = "") => el("span", { class: `badge ${kind}` }, text);
 const section = (title, ...body) => el("section", { class: "block" }, el("h3", {}, title), ...body);
@@ -164,9 +165,81 @@ export function renderEntity(panel, model, name, app) {
     rulesBlock(e),
     mentionsBlock(model, e.name, app),
     usedByBlock(model, e.name, app),
+    versionsSection(e.name, app),
     section("IFC5", compare),
     sourceBlock(model, e),
   );
+}
+
+/** "In other versions": a button that loads the three EXPRESS schemas and shows what changed between them. */
+function versionsSection(name, app) {
+  const holder = el("div", {});
+  const run = async () => {
+    replace(holder, muted("Loading IFC2X3, IFC4 and IFC4X3…"));
+    let rows;
+    try {
+      rows = acrossVersions(name, await app.versions());
+    } catch (error) {
+      replace(holder, muted(`The versions could not be loaded: ${error.message}`));
+      return;
+    }
+    replace(holder, el("table", { class: "attrs versions" }, el("thead", {}, el("tr", {}, el("th", {}, "Version"), el("th", {}, "Change from the version before"))), el("tbody", {}, rows.map((r) => versionRow(name, r, app)))));
+  };
+  replace(holder, el("button", { type: "button", class: "button", onclick: run }, "Compare versions"));
+  return section("In other versions", holder, muted("Matched by name, so a renamed entity shows as gone in one version and new in the next."));
+}
+
+function versionRow(name, row, app) {
+  const label = row.here ? nav(row.label, () => app.navigate(row.here.name, "near", row.id)) : el("span", { class: "muted" }, row.label);
+  const c = row.change;
+  let what;
+  if (!row.here) what = el("span", { class: "muted" }, c?.status === "absent" ? "Removed (or renamed)" : "Not in this version");
+  else if (!c) what = el("span", { class: "muted" }, row.here.kind === "entity" ? `Subtype of ${row.here.supertype ?? "nothing"}` : row.here.underlying);
+  else if (c.status === "new") what = el("strong", {}, "New in this version");
+  else if (c.status === "same") what = el("span", { class: "muted" }, "Unchanged");
+  else {
+    what = el(
+      "ul",
+      { class: "plain" },
+      c.notes.map((n) => el("li", {}, n)),
+      c.added.length ? el("li", {}, el("span", { class: "added" }, "+ "), c.added.join(", ")) : null,
+      c.removed.length ? el("li", {}, el("span", { class: "removed" }, "− "), c.removed.join(", ")) : null,
+      c.changed.map((x) => el("li", {}, `${x.name}: `, el("code", {}, x.from), " → ", el("code", {}, x.to))),
+    );
+  }
+  return el("tr", {}, el("td", {}, label), el("td", {}, what));
+}
+
+/** What a schema adds and removes compared with the version before it. */
+function schemaVersionSection(model, app) {
+  const order = ["IFC2X3", "IFC4", "IFC4X3"];
+  const i = order.indexOf(model.id);
+  if (i <= 0) return null;
+  const holder = el("div", {});
+  const run = async () => {
+    replace(holder, muted("Loading the version before…"));
+    try {
+      const versions = await app.versions();
+      const before = versions[i - 1];
+      const d = schemaChanges(before.model, model);
+      const list = (title, names, id) =>
+        names.length
+          ? el("details", { class: "block" }, el("summary", {}, `${title} (${names.length})`), el("p", { class: "names" }, names.map((n) => nav(n, () => app.navigate(n, "near", id)))))
+          : el("p", { class: "muted" }, `${title}: none.`);
+      replace(
+        holder,
+        el("p", {}, `Compared with ${before.label}, by name:`),
+        list("New entities", d.addedEntities, model.id),
+        list("New types", d.addedTypes, model.id),
+        list("Entities no longer here", d.removedEntities, before.id),
+        list("Types no longer here", d.removedTypes, before.id),
+      );
+    } catch (error) {
+      replace(holder, muted(`The version before could not be loaded: ${error.message}`));
+    }
+  };
+  replace(holder, el("button", { type: "button", class: "button", onclick: run }, "Compare with the version before"));
+  return section("Changes from the version before", holder);
 }
 
 async function compareBlock(holder, model, name, app) {
@@ -292,6 +365,7 @@ export function renderType(panel, model, name, app) {
     body,
     rulesBlock(t),
     usedByBlock(model, t.name, app),
+    versionsSection(t.name, app),
     sourceBlock(model, t),
   );
 }
@@ -439,5 +513,6 @@ export function renderExpressStart(panel, model, app) {
     c.errors ? el("p", { class: "warn" }, `${c.errors} declarations could not be read and are left out.`) : null,
     c.skipped ? muted(`${c.skipped} declarations of kinds the IFC schemas do not use were skipped.`) : null,
     section(`Roots (${model.roots().length})`, el("p", { class: "names" }, model.roots().map((r) => nav(r, () => app.navigate(r))))),
+    schemaVersionSection(model, app),
   );
 }

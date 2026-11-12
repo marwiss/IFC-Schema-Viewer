@@ -10,6 +10,8 @@ IFC schemas as a graph you can navigate, in the browser. A static page without a
   `usd@v1`, `nlsfb@v1`), read as JSON, with their components grouped per namespace.
 - **Comparison**: an EXPRESS entity beside IFC5, through the code of `bsi::ifc::class` and the components that have the
   names of its attributes.
+- **Versions**: an entity or type across IFC2X3, IFC4 and IFC4X3 (new, changed and removed attributes, a changed
+  supertype, new enumeration values), and what each schema adds and removes compared with the one before.
 - **Links**: every entity, type, attribute and property set links to its page in the standard.
 
 You can also open your own `.exp` or `.ifcx` files; they are read in the browser and sent nowhere.
@@ -62,6 +64,13 @@ entity against a component named like it (`IfcAlignmentHorizontalSegment` →
 `bsi::ifc::alignmenthorizontalsegment`), its attributes against that component's members, enumerations against Enum
 options, and an IFC5 property against the IFC 4.3 property sets that have it. With an IFC5 data file opened, it also
 shows which components stand on the paths that carry a given class code.
+
+## Versions
+
+*Compare versions* on an entity or type loads the three EXPRESS schemas and shows, version by version, what changed
+from the one before; *Compare with the version before* on a schema lists the entities and types it adds and removes.
+Both match by name, so a renamed entity (IfcBuildingElement became IfcBuiltElement in IFC4X3) shows as removed in one
+version and new in the next.
 
 ## Sources
 

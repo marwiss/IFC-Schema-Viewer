@@ -66,6 +66,12 @@ const app = {
     const [ifc5, classSchema] = await Promise.all([loadModel("IFC5"), loadModel(CLASS_SCHEMA)]);
     return { comparison: compareEntity(name, express, ifc5, classSchema), ifc5 };
   },
+  /** The three pinned EXPRESS schemas, oldest first. */
+  async versions() {
+    const ids = SCHEMAS.filter((s) => s.format === "express").map((s) => s.id);
+    const loaded = await Promise.all(ids.map(loadModel));
+    return ids.map((id, i) => ({ id, label: schemaById(id).label, model: loaded[i] }));
+  },
   ifc5: () => loadModel("IFC5"),
   classSchema: () => loadModel(CLASS_SCHEMA),
 };
